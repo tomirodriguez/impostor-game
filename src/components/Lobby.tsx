@@ -3,6 +3,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { categories } from "../../convex/words";
+import AdvancedSettings from "./AdvancedSettings";
 
 interface LobbyProps {
   game: Doc<"games">;
@@ -14,10 +15,12 @@ interface LobbyProps {
 export default function Lobby({ game, players, me, isHost }: LobbyProps) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [advancedError, setAdvancedError] = useState("");
 
   const updateSettings = useMutation(api.games.updateSettings);
   const startGame = useMutation(api.rounds.startGame);
   const leaveGame = useMutation(api.players.leave);
+  const kickPlayer = useMutation(api.players.kick);
 
   const shareUrl = `${window.location.origin}/game/${game.code}`;
 
@@ -80,18 +83,6 @@ export default function Lobby({ game, players, me, isHost }: LobbyProps) {
     }
   };
 
-  const handleToggleAllImpostors = async () => {
-    try {
-      await updateSettings({
-        gameId: game._id,
-        playerId: me._id,
-        allImpostors: !game.allImpostors,
-      });
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
   const handleStart = async () => {
     setError("");
     try {
@@ -113,6 +104,38 @@ export default function Lobby({ game, players, me, isHost }: LobbyProps) {
       window.location.href = "/";
     } catch (err: any) {
       setError(err.message);
+    }
+  };
+
+  const handleKick = async (targetPlayerId: typeof me._id) => {
+    try {
+      const result = await kickPlayer({
+        gameId: game._id,
+        hostPlayerId: me._id,
+        targetPlayerId,
+      });
+      // Guardar en localStorage para mostrar mensaje al kickeado
+      if (result?.kickedSessionId) {
+        const kickedKey = `kicked-${game.code}`;
+        const kickedList = JSON.parse(localStorage.getItem(kickedKey) || "[]");
+        kickedList.push(result.kickedSessionId);
+        localStorage.setItem(kickedKey, JSON.stringify(kickedList));
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleAdvancedUpdate = async (settings: Record<string, any>) => {
+    setAdvancedError("");
+    try {
+      await updateSettings({
+        gameId: game._id,
+        playerId: me._id,
+        ...settings,
+      });
+    } catch (err: any) {
+      setAdvancedError(err.message);
     }
   };
 
@@ -146,9 +169,20 @@ export default function Lobby({ game, players, me, isHost }: LobbyProps) {
                   {player._id === game.hostId && " (Host)"}
                   {player._id === me._id && " (Tu)"}
                 </span>
-                {player.score > 0 && (
-                  <span className="player-score">{player.score} pts</span>
-                )}
+                <div className="player-actions">
+                  {player.score > 0 && (
+                    <span className="player-score">{player.score} pts</span>
+                  )}
+                  {isHost && player._id !== me._id && (
+                    <button
+                      className="btn-kick"
+                      onClick={() => handleKick(player._id)}
+                      title="Expulsar jugador"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
         </ul>
@@ -158,6 +192,7 @@ export default function Lobby({ game, players, me, isHost }: LobbyProps) {
         <div className="settings-section">
           <h2>Configuracion</h2>
 
+          {/* Configuracion Basica */}
           <div className="setting">
             <label>Categoria</label>
             <select
@@ -177,14 +212,8 @@ export default function Lobby({ game, players, me, isHost }: LobbyProps) {
             <label>Impostores</label>
             <div className="impostor-controls">
               <select
-                value={game.allImpostors ? "all" : game.impostorCount}
-                onChange={(e) => {
-                  if (e.target.value === "all") {
-                    handleToggleAllImpostors();
-                  } else {
-                    handleUpdateImpostorCount(parseInt(e.target.value));
-                  }
-                }}
+                value={game.impostorCount}
+                onChange={(e) => handleUpdateImpostorCount(parseInt(e.target.value))}
                 className="select"
                 disabled={game.allImpostors}
               >
@@ -194,19 +223,41 @@ export default function Lobby({ game, players, me, isHost }: LobbyProps) {
                   </option>
                 ))}
               </select>
+              {game.allImpostors && (
+                <span className="setting-hint">Modo "todos impostores" activo</span>
+              )}
             </div>
           </div>
 
-          <div className="setting checkbox-setting">
-            <label>
-              <input
-                type="checkbox"
-                checked={game.allImpostors}
-                onChange={handleToggleAllImpostors}
-              />
-              <span>Todos son impostores (modo broma)</span>
-            </label>
+          <div className="setting">
+            <label>Limite de rondas</label>
+            <select
+              value={game.maxRounds ?? 0}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                handleAdvancedUpdate({ maxRounds: val });
+              }}
+              className="select"
+            >
+              <option value={2}>2 rondas</option>
+              <option value={3}>3 rondas</option>
+              <option value={4}>4 rondas</option>
+              <option value={5}>5 rondas</option>
+              <option value={0}>Sin limite</option>
+            </select>
+            <p className="setting-hint">
+              {game.maxRounds
+                ? `Si el impostor sobrevive ${game.maxRounds} rondas, gana`
+                : "El juego continua hasta que el impostor sea eliminado"}
+            </p>
           </div>
+
+          {/* Configuracion Avanzada */}
+          <AdvancedSettings
+            game={game}
+            onUpdate={handleAdvancedUpdate}
+            error={advancedError}
+          />
         </div>
       )}
 

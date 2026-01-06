@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "../hooks/useSessionId";
 import Lobby from "../components/Lobby";
@@ -9,10 +10,80 @@ import Voting from "../components/Voting";
 import Results from "../components/Results";
 import Finished from "../components/Finished";
 
+function JoinForm({ code, onJoined }: { code: string; onJoined: () => void }) {
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const sessionId = useSessionId();
+  const joinGame = useMutation(api.players.join);
+
+  const handleJoin = async () => {
+    if (!name.trim()) {
+      setError("Ingresa tu nombre");
+      return;
+    }
+    if (!sessionId) return;
+
+    setLoading(true);
+    setError("");
+    try {
+      await joinGame({
+        code: code.toLowerCase(),
+        name: name.trim(),
+        sessionId,
+      });
+      onJoined();
+    } catch (err: any) {
+      setError(err.message || "Error al unirse");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleJoin();
+    }
+  };
+
+  return (
+    <div className="home">
+      <div className="home-content">
+        <h1 className="title">Unirse a Partida</h1>
+        <p className="subtitle">Codigo: {code.toUpperCase()}</p>
+
+        <div className="form">
+          <input
+            type="text"
+            placeholder="Tu nombre"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="input"
+            maxLength={20}
+            autoFocus
+          />
+
+          {error && <p className="error">{error}</p>}
+
+          <button
+            className="btn btn-primary"
+            onClick={handleJoin}
+            disabled={loading || !sessionId}
+          >
+            {loading ? "Cargando..." : "Unirse"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Game() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const sessionId = useSessionId();
+  const [joinKey, setJoinKey] = useState(0);
 
   const game = useQuery(api.games.getByCode, code ? { code } : "skip");
   const players = useQuery(
@@ -52,15 +123,62 @@ export default function Game() {
     );
   }
 
+  // Verificar si el usuario fue kickeado
+  const kickedKey = `kicked-${code}`;
+  const kickedList: string[] = JSON.parse(localStorage.getItem(kickedKey) || "[]");
+  const wasKicked = kickedList.includes(sessionId);
+
+  // Si el usuario no está en la partida, mostrar formulario para unirse
   if (!me) {
+    // Mostrar mensaje si fue kickeado
+    if (wasKicked) {
+      const handleClearKicked = () => {
+        const newList = kickedList.filter(id => id !== sessionId);
+        if (newList.length > 0) {
+          localStorage.setItem(kickedKey, JSON.stringify(newList));
+        } else {
+          localStorage.removeItem(kickedKey);
+        }
+        setJoinKey(k => k + 1);
+      };
+
+      return (
+        <div className="error-page">
+          <h2>Has sido expulsado</h2>
+          <p>El host te ha removido de esta partida.</p>
+          <div className="error-actions">
+            <button className="btn btn-primary" onClick={() => navigate("/")}>
+              Volver al inicio
+            </button>
+            {game.status === "lobby" && (
+              <button className="btn btn-secondary" onClick={handleClearKicked}>
+                Intentar unirse de nuevo
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Solo permitir unirse si el juego está en lobby
+    if (game.status !== "lobby") {
+      return (
+        <div className="error-page">
+          <h2>Partida en curso</h2>
+          <p>Esta partida ya ha comenzado y no puedes unirte.</p>
+          <button className="btn btn-primary" onClick={() => navigate("/")}>
+            Volver al inicio
+          </button>
+        </div>
+      );
+    }
+
     return (
-      <div className="error-page">
-        <h2>No estas en esta partida</h2>
-        <p>Parece que no te has unido a esta partida.</p>
-        <button className="btn btn-primary" onClick={() => navigate("/")}>
-          Volver al inicio
-        </button>
-      </div>
+      <JoinForm 
+        key={joinKey}
+        code={code!} 
+        onJoined={() => setJoinKey(k => k + 1)} 
+      />
     );
   }
 

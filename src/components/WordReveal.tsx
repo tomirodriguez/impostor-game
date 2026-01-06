@@ -40,9 +40,17 @@ export default function WordReveal({ game, me, isHost }: WordRevealProps) {
     );
   }
 
+  const showCategory = game.showCategory ?? false;
+
   return (
     <div className="word-reveal">
       <h1>Ronda {game.currentRound}</h1>
+
+      {showCategory && (
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <span className="category-hint">Categoría: <strong>{game.category}</strong></span>
+        </div>
+      )}
 
       <div className="reveal-card">
         {!revealed ? (

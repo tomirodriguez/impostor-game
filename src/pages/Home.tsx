@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "../hooks/useSessionId";
+import InstallPWAButton from "../components/InstallPWAButton";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -72,12 +73,20 @@ export default function Home() {
           <h1 className="title">El Impostor</h1>
           <p className="subtitle">Juego de deduccion social</p>
 
+          <InstallPWAButton />
+
           <div className="menu-buttons">
             <button className="btn btn-primary" onClick={() => setMode("create")}>
               Crear Partida
             </button>
             <button className="btn btn-secondary" onClick={() => setMode("join")}>
               Unirse a Partida
+            </button>
+            <button
+              className="btn btn-offline"
+              onClick={() => navigate("/local")}
+            >
+              Jugar Offline
             </button>
           </div>
         </div>
@@ -100,8 +109,18 @@ export default function Home() {
             placeholder="Tu nombre"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (mode === "create") {
+                  handleCreate();
+                } else if (joinCode.trim()) {
+                  handleJoin();
+                }
+              }
+            }}
             className="input"
             maxLength={20}
+            autoFocus
           />
 
           {mode === "join" && (
@@ -110,6 +129,11 @@ export default function Home() {
               placeholder="Codigo de partida"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toLowerCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleJoin();
+                }
+              }}
               className="input"
               maxLength={6}
             />

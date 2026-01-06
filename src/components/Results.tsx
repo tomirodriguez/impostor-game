@@ -17,7 +17,8 @@ export default function Results({ game, players, me, isHost }: ResultsProps) {
   });
   const nextRound = useMutation(api.rounds.nextRound);
 
-  const getPlayerName = (playerId: string) => {
+  const getPlayerName = (playerId: string | undefined) => {
+    if (!playerId) return "Abstencion";
     const player = players.find((p) => p._id === playerId);
     return player?.name || "Desconocido";
   };
@@ -41,24 +42,67 @@ export default function Results({ game, players, me, isHost }: ResultsProps) {
     );
   }
 
+  const eliminatedPlayers = results.eliminatedPlayers.filter(Boolean);
+  const hasEliminated = eliminatedPlayers.length > 0;
+  const multipleEliminated = eliminatedPlayers.length > 1;
+
+  // Determinar si los eliminados son impostores
+  const allImpostors = eliminatedPlayers.every((p) => p?.isImpostor);
+  const allInnocents = eliminatedPlayers.every((p) => !p?.isImpostor);
+
   return (
     <div className="results">
       <h1>Resultados</h1>
-      <p className="round-number">Ronda {game.currentRound}</p>
+      <p className="round-number">
+        Ronda {results.currentRound}
+        {results.maxRounds ? ` de ${results.maxRounds}` : ""}
+      </p>
 
       {/* Elimination result */}
       <div className="elimination-section">
-        {results.isTie ? (
+        {results.wasSkipped ? (
+          <div className="result-card tie">
+            <h2>Sin eliminacion!</h2>
+            <p>La mayoria se abstuvo de votar. Nadie fue eliminado.</p>
+          </div>
+        ) : results.isTie && !hasEliminated ? (
           <div className="result-card tie">
             <h2>Empate!</h2>
-            <p>No hubo consenso. Nadie fue eliminado.</p>
+            <p>
+              {results.tieBreaker === "none"
+                ? "No hubo consenso. Nadie fue eliminado."
+                : "Hubo empate en la votacion."}
+            </p>
           </div>
-        ) : results.eliminatedPlayer ? (
+        ) : hasEliminated ? (
           <div
-            className={`result-card ${results.eliminatedPlayer.isImpostor ? "impostor-caught" : "innocent-eliminated"}`}
+            className={`result-card ${allImpostors ? "impostor-caught" : "innocent-eliminated"}`}
           >
-            <h2>{results.eliminatedPlayer.name} fue eliminado!</h2>
-            {results.eliminatedPlayer.isImpostor ? (
+            <h2>
+              {multipleEliminated
+                ? `${eliminatedPlayers.map((p) => p?.name).join(" y ")} fueron eliminados!`
+                : `${eliminatedPlayers[0]?.name} fue eliminado!`}
+            </h2>
+            {multipleEliminated ? (
+              <>
+                {allImpostors ? (
+                  <>
+                    <p className="reveal-role">Todos eran IMPOSTORES!</p>
+                    <p className="result-message">El grupo acerto!</p>
+                  </>
+                ) : allInnocents ? (
+                  <>
+                    <p className="reveal-role">Todos eran INOCENTES!</p>
+                    <p className="result-message">Los impostores siguen entre nosotros...</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="reveal-role">Habia de todo...</p>
+                    <p className="result-message">Algunos impostores cayeron, pero tambien inocentes.</p>
+                  </>
+                )}
+              </>
+            ) : eliminatedPlayers[0]?.isImpostor ? (
               <>
                 <p className="reveal-role">Era un IMPOSTOR!</p>
                 <p className="result-message">El grupo acerto!</p>
@@ -68,6 +112,12 @@ export default function Results({ game, players, me, isHost }: ResultsProps) {
                 <p className="reveal-role">Era INOCENTE!</p>
                 <p className="result-message">Los impostores siguen entre nosotros...</p>
               </>
+            )}
+
+            {results.isTie && results.tieBreaker === "random" && (
+              <p className="tie-info">
+                (Seleccionado al azar por empate)
+              </p>
             )}
           </div>
         ) : (
@@ -86,12 +136,20 @@ export default function Results({ game, players, me, isHost }: ResultsProps) {
             .map(([playerId, count]) => (
               <div key={playerId} className="vote-count-item">
                 <span className="vote-target">{getPlayerName(playerId)}</span>
-                <span className="vote-count">{count as number} voto{(count as number) !== 1 ? "s" : ""}</span>
+                <span className="vote-count">
+                  {count as number} voto{(count as number) !== 1 ? "s" : ""}
+                </span>
               </div>
             ))}
+          {results.skipVotes > 0 && (
+            <div className="vote-count-item vote-skip-result">
+              <span className="vote-target">Abstenciones</span>
+              <span className="vote-count">{results.skipVotes}</span>
+            </div>
+          )}
         </div>
 
-        {votes && (
+        {votes && votes.length > 0 && (
           <details className="vote-details">
             <summary>Ver quien voto a quien</summary>
             <ul className="vote-list">

@@ -39,6 +39,10 @@ export const create = mutation({
       category: "animales",
       impostorCount: 1,
       allImpostors: false,
+      requireClueText: false, // Por defecto no se requiere escribir la pista
+      showCategory: false, // Por defecto no se muestra la categoría
+      turnMode: "random", // Por defecto turnos aleatorios
+      maxRounds: 2, // Por defecto 2 rondas
       currentRound: 0,
       createdAt: Date.now(),
     });
@@ -85,6 +89,20 @@ export const updateSettings = mutation({
     category: v.optional(v.string()),
     impostorCount: v.optional(v.number()),
     allImpostors: v.optional(v.boolean()),
+    requireClueText: v.optional(v.boolean()),
+    showCategory: v.optional(v.boolean()),
+    turnMode: v.optional(v.union(v.literal("random"), v.literal("fixed"))),
+    // Nuevos campos Fase 1
+    maxRounds: v.optional(v.number()),
+    turnTimeLimit: v.optional(v.number()),
+    secretVoting: v.optional(v.boolean()),
+    allowSkipVote: v.optional(v.boolean()),
+    tieBreaker: v.optional(v.union(
+      v.literal("none"),
+      v.literal("all"),
+      v.literal("random")
+    )),
+    chainedClues: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const game = await ctx.db.get(args.gameId);
@@ -96,6 +114,16 @@ export const updateSettings = mutation({
     if (args.category !== undefined) updates.category = args.category;
     if (args.impostorCount !== undefined) updates.impostorCount = args.impostorCount;
     if (args.allImpostors !== undefined) updates.allImpostors = args.allImpostors;
+    if (args.requireClueText !== undefined) updates.requireClueText = args.requireClueText;
+    if (args.showCategory !== undefined) updates.showCategory = args.showCategory;
+    if (args.turnMode !== undefined) updates.turnMode = args.turnMode;
+    // Nuevos campos
+    if (args.maxRounds !== undefined) updates.maxRounds = args.maxRounds;
+    if (args.turnTimeLimit !== undefined) updates.turnTimeLimit = args.turnTimeLimit;
+    if (args.secretVoting !== undefined) updates.secretVoting = args.secretVoting;
+    if (args.allowSkipVote !== undefined) updates.allowSkipVote = args.allowSkipVote;
+    if (args.tieBreaker !== undefined) updates.tieBreaker = args.tieBreaker;
+    if (args.chainedClues !== undefined) updates.chainedClues = args.chainedClues;
 
     await ctx.db.patch(args.gameId, updates);
   },

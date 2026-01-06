@@ -138,3 +138,43 @@ export const leave = mutation({
     }
   },
 });
+
+
+export const kick = mutation({
+  args: {
+    gameId: v.id("games"),
+    hostPlayerId: v.id("players"),
+    targetPlayerId: v.id("players"),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) {
+      throw new Error("Partida no encontrada");
+    }
+
+    // Verificar que quien kickea es el host
+    if (game.hostId !== args.hostPlayerId) {
+      throw new Error("Solo el host puede expulsar jugadores");
+    }
+
+    // No puede kickearse a sí mismo
+    if (args.hostPlayerId === args.targetPlayerId) {
+      throw new Error("No puedes expulsarte a ti mismo");
+    }
+
+    // Solo permitir kick en lobby
+    if (game.status !== "lobby") {
+      throw new Error("Solo puedes expulsar jugadores en la sala de espera");
+    }
+
+    const targetPlayer = await ctx.db.get(args.targetPlayerId);
+    if (!targetPlayer || targetPlayer.gameId !== args.gameId) {
+      throw new Error("Jugador no encontrado en esta partida");
+    }
+
+    // Eliminar el jugador
+    await ctx.db.delete(args.targetPlayerId);
+
+    return { kickedSessionId: targetPlayer.sessionId };
+  },
+});
