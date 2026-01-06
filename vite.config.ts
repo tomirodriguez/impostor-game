@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
+      includeAssets: ["favicon.svg", "favicon.png", "apple-touch-icon.png"],
       manifest: {
         name: "El Impostor",
         short_name: "Impostor",
