@@ -33,7 +33,9 @@ export const startGame = mutation({
 
     // Select random word from category
     const categoryWords = words[game.category as keyof typeof words] || words.animales;
-    const secretWord = categoryWords[Math.floor(Math.random() * categoryWords.length)];
+    const randomWord = categoryWords[Math.floor(Math.random() * categoryWords.length)];
+    const secretWord = randomWord.word;
+    const tabooWords = randomWord.taboo;
 
     // Assign impostors
     const playerIds = players.map((p) => p._id);
@@ -74,6 +76,7 @@ export const startGame = mutation({
       status: "reveal",
       currentRound: 1,
       secretWord,
+      tabooWords,
       turnOrder,
       currentTurnIndex: 0,
       turnStartedAt: undefined, // Se establecerá cuando empiece la fase de clues
@@ -774,9 +777,15 @@ export const nextRound = mutation({
       }
       await ctx.db.patch(args.gameId, { status: "finished" });
     } else {
-      // New round: new word, determine turn order
-      const categoryWords = words[game.category as keyof typeof words] || words.animales;
-      const secretWord = categoryWords[Math.floor(Math.random() * categoryWords.length)];
+      // New round: determine turn order, optionally new word
+      let secretWord = game.secretWord;
+      let tabooWords = game.tabooWords;
+      if (game.changeWordEachRound) {
+        const categoryWords = words[game.category as keyof typeof words] || words.animales;
+        const randomWord = categoryWords[Math.floor(Math.random() * categoryWords.length)];
+        secretWord = randomWord.word;
+        tabooWords = randomWord.taboo;
+      }
 
       let turnOrder: Id<"players">[];
       if (game.turnMode === "fixed") {
@@ -796,6 +805,7 @@ export const nextRound = mutation({
         status: "reveal",
         currentRound: nextRoundNumber,
         secretWord,
+        tabooWords,
         turnOrder,
         currentTurnIndex: 0,
         turnStartedAt: undefined,

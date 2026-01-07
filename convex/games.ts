@@ -103,6 +103,8 @@ export const updateSettings = mutation({
       v.literal("random")
     )),
     chainedClues: v.optional(v.boolean()),
+    changeWordEachRound: v.optional(v.boolean()),
+    tabooMode: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const game = await ctx.db.get(args.gameId);
@@ -124,6 +126,8 @@ export const updateSettings = mutation({
     if (args.allowSkipVote !== undefined) updates.allowSkipVote = args.allowSkipVote;
     if (args.tieBreaker !== undefined) updates.tieBreaker = args.tieBreaker;
     if (args.chainedClues !== undefined) updates.chainedClues = args.chainedClues;
+    if (args.changeWordEachRound !== undefined) updates.changeWordEachRound = args.changeWordEachRound;
+    if (args.tabooMode !== undefined) updates.tabooMode = args.tabooMode;
 
     await ctx.db.patch(args.gameId, updates);
   },

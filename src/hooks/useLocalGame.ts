@@ -98,7 +98,8 @@ export function useLocalGame() {
 
       // Elegir palabra secreta
       const categoryWords = words[settings.category as keyof typeof words] || words.animales;
-      const secretWord = categoryWords[Math.floor(Math.random() * categoryWords.length)];
+      const randomWord = categoryWords[Math.floor(Math.random() * categoryWords.length)];
+      const secretWord = randomWord.word;
 
       // Crear orden de turnos aleatorio
       const turnOrder = shuffle(players.map((p) => p.id));
@@ -344,8 +345,9 @@ export function useLocalGame() {
       // Nueva palabra secreta
       const categoryWords =
         words[game.settings.category as keyof typeof words] || words.animales;
-      const secretWord =
+      const randomWord =
         categoryWords[Math.floor(Math.random() * categoryWords.length)];
+      const secretWord = randomWord.word;
 
       // Nuevo orden de turnos
       const turnOrder = shuffle(remainingPlayers.map((p) => p.id));

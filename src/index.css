@@ -531,6 +531,41 @@ body {
   max-width: 280px;
 }
 
+/* Taboo Mode */
+.taboo-words {
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255, 59, 48, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 59, 48, 0.3);
+}
+
+.taboo-label {
+  color: var(--error);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.taboo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.taboo-word {
+  background: rgba(255, 59, 48, 0.2);
+  color: var(--error);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
 .host-actions {
   display: flex;
   flex-direction: column;

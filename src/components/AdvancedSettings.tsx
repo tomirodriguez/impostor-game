@@ -153,6 +153,36 @@ export default function AdvancedSettings({ game, onUpdate, error }: AdvancedSett
             </p>
           </div>
 
+          {/* Cambiar palabra cada ronda */}
+          <div className="setting checkbox-setting">
+            <label>
+              <input
+                type="checkbox"
+                checked={game.changeWordEachRound ?? false}
+                onChange={() => handleToggle("changeWordEachRound", game.changeWordEachRound)}
+              />
+              <span>Cambiar palabra cada ronda</span>
+            </label>
+            <p className="setting-hint">
+              La palabra secreta cambia en cada nueva ronda
+            </p>
+          </div>
+
+          {/* Modo Taboo */}
+          <div className="setting checkbox-setting">
+            <label>
+              <input
+                type="checkbox"
+                checked={game.tabooMode ?? false}
+                onChange={() => handleToggle("tabooMode", game.tabooMode)}
+              />
+              <span>Modo Taboo</span>
+            </label>
+            <p className="setting-hint">
+              Los ciudadanos ven palabras prohibidas que no pueden usar en sus pistas
+            </p>
+          </div>
+
           {/* Todos son impostores */}
           <div className="setting checkbox-setting">
             <label>

@@ -72,9 +72,20 @@ export default function WordReveal({ game, me, isHost }: WordRevealProps) {
                 <div className="role-badge normal">JUGADOR</div>
                 <p className="secret-word-label">Tu palabra secreta es:</p>
                 <p className="secret-word">{role.secretWord}</p>
+                {game.tabooMode && game.tabooWords && game.tabooWords.length > 0 && (
+                  <div className="taboo-words">
+                    <p className="taboo-label">Palabras prohibidas:</p>
+                    <div className="taboo-list">
+                      {game.tabooWords.map((word, index) => (
+                        <span key={index} className="taboo-word">{word}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <p className="role-description">
                   Da pistas sutiles para demostrar que conoces la palabra, pero no seas
                   demasiado obvio.
+                  {game.tabooMode && " No puedes usar las palabras prohibidas!"}
                 </p>
               </>
             )}

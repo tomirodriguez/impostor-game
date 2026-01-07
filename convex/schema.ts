@@ -32,9 +32,12 @@ export default defineSchema({
       v.literal("random")   // eliminar uno aleatorio
     )),
     chainedClues: v.optional(v.boolean()), // Si true, pistas deben empezar con la última letra de la anterior
+    changeWordEachRound: v.optional(v.boolean()), // Si true, la palabra cambia en cada ronda
+    tabooMode: v.optional(v.boolean()), // Si true, se muestran palabras prohibidas estilo Taboo
 
     currentRound: v.number(),
     secretWord: v.optional(v.string()),
+    tabooWords: v.optional(v.array(v.string())), // Palabras prohibidas para modo Taboo
     turnOrder: v.optional(v.array(v.id("players"))),
     currentTurnIndex: v.optional(v.number()),
     createdAt: v.number(),
